@@ -104,6 +104,28 @@ class Node3D {
   /// Possible movements regarding heading theta
   static const float dt[];
 
+  //set moving direction
+  void setMovingDirection(int moving_direction){
+    this->moving_direction = moving_direction;
+  }
+  void setIsRS(bool is_RS){
+    this->is_RS = is_RS;
+  }
+  void setRSMotionType(int RS_motion_type){
+    this->RS_motion_type = RS_motion_type;
+  }
+  void setRemainingDist(float remaining_dist){
+    this->remaining_dist = remaining_dist;
+  }
+  void setAStarMotionType(int A_star_motion_type){
+    this->A_star_motion_type = A_star_motion_type;
+  }
+
+  float getDistToGoal(const Node3D* ngoal){
+    return sqrt((this->x - ngoal->getX())*(this->x - ngoal->getX()) + 
+                (this->y - ngoal->getY())*(this->y - ngoal->getY()));
+  }
+
  private:
   /// the x position
   float x;
@@ -125,6 +147,22 @@ class Node3D {
   int prim;
   /// the predecessor pointer
   const Node3D* pred;
+
+  // forward or backward and different radius
+  int moving_direction;
+
+  // is_RS
+  bool is_RS;
+
+  // RS motion type
+  int RS_motion_type;
+
+  // remaining distance
+  float remaining_dist;
+
+  //int A_star motion type
+  int A_star_motion_type;
+
 };
 }
 #endif // NODE3D_H

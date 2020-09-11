@@ -2,12 +2,12 @@
 
 using namespace HybridAStar;
 
-
 //###################################################
 //                                         CLEAR PATH
 //###################################################
 
-void Path::clear() {
+void Path::clear()
+{
   Node3D node;
   path.poses.clear();
   pathNodes.markers.clear();
@@ -45,11 +45,13 @@ void Path::clear() {
 //###################################################
 // __________
 // TRACE PATH
-void Path::updatePath(std::vector<Node3D> nodePath) {
+void Path::updatePath(std::vector<Node3D> nodePath)
+{
   path.header.stamp = ros::Time::now();
   int k = 0;
 
-  for (size_t i = 0; i < nodePath.size(); ++i) {
+  for (size_t i = 0; i < nodePath.size(); ++i)
+  {
     addSegment(nodePath[i]);
     addNode(nodePath[i], k);
     k++;
@@ -61,7 +63,8 @@ void Path::updatePath(std::vector<Node3D> nodePath) {
 }
 // ___________
 // ADD SEGMENT
-void Path::addSegment(const Node3D& node) {
+void Path::addSegment(const Node3D &node)
+{
   geometry_msgs::PoseStamped vertex;
   vertex.pose.position.x = node.getX() * Constants::cellSize;
   vertex.pose.position.y = node.getY() * Constants::cellSize;
@@ -72,14 +75,95 @@ void Path::addSegment(const Node3D& node) {
   vertex.pose.orientation.w = 0;
   path.poses.push_back(vertex);
 }
+void Path::publishLineSeg(Node3D *nstart, Node3D *ngoal)
+{
+  nav_msgs::Path jjpath;
+  jjpath.header.frame_id = "path";
+  geometry_msgs::PoseStamped vertex;
+  vertex.pose.position.x = nstart->getX() * Constants::cellSize;
+  vertex.pose.position.y = nstart->getY() * Constants::cellSize;
+  vertex.pose.position.z = 0;
+  vertex.pose.orientation.x = 0;
+  vertex.pose.orientation.y = 0;
+  vertex.pose.orientation.z = 0;
+  vertex.pose.orientation.w = 0;
+  jjpath.poses.push_back(vertex);
+
+  vertex.pose.position.x = ngoal->getX() * Constants::cellSize;
+  vertex.pose.position.y = ngoal->getY() * Constants::cellSize;
+  vertex.pose.position.z = 0;
+  vertex.pose.orientation.x = 0;
+  vertex.pose.orientation.y = 0;
+  vertex.pose.orientation.z = 0;
+  vertex.pose.orientation.w = 0;
+  jjpath.poses.push_back(vertex);
+  pubPath.publish(jjpath);
+  ROS_INFO("haha_qqw");
+
+}
+
+void Path::publish_search_tree(Node3D *nstart, Node3D *ngoal){
+  line_list.header.frame_id = "path";
+  line_list.header.stamp = ros::Time::now();
+  line_list.ns = "points_and_lines";
+  line_list.action = visualization_msgs::Marker::ADD;
+  line_list.pose.orientation.w = 1.0;
+  line_list.id = 2;
+  line_list.type = visualization_msgs::Marker::LINE_LIST;
+  line_list.scale.x = 0.2;
+  line_list.color.r = 1.0;
+  line_list.color.a = 1.0;
+
+  geometry_msgs::Point p;
+  p.x = nstart->getX() * Constants::cellSize;
+  p.y = nstart->getY() * Constants::cellSize;
+  p.z = 0;
+  line_list.points.push_back(p);
+
+  p.x = ngoal->getX() * Constants::cellSize;
+  p.y = ngoal->getY() * Constants::cellSize;
+  p.z = 0;
+  line_list.points.push_back(p);
+
+  pubPathTree.publish(line_list);
+
+
+}
+void Path::cleanPathTree(){
+  line_list.header.frame_id = "path";
+  line_list.header.stamp = ros::Time::now();
+  line_list.ns = "points_and_lines";
+  line_list.action = visualization_msgs::Marker::ADD;
+  line_list.pose.orientation.w = 1.0;
+  line_list.id = 2;
+  line_list.type = visualization_msgs::Marker::LINE_LIST;
+  line_list.scale.x = 0.2;
+  line_list.color.r = 1.0;
+  line_list.color.a = 1.0;
+  line_list.points.clear();
+  geometry_msgs::Point p;
+  p.x = 0;
+  p.y = 0;
+  p.z = 0;
+  line_list.points.push_back(p);
+
+  p.x = 0;
+  p.y = 0;
+  p.z = 0;
+  line_list.points.push_back(p);
+
+  pubPathTree.publish(line_list);
+}
 
 // ________
 // ADD NODE
-void Path::addNode(const Node3D& node, int i) {
+void Path::addNode(const Node3D &node, int i)
+{
   visualization_msgs::Marker pathNode;
 
   // delete all previous markers
-  if (i == 0) {
+  if (i == 0)
+  {
     pathNode.action = 3;
   }
 
@@ -92,11 +176,14 @@ void Path::addNode(const Node3D& node, int i) {
   pathNode.scale.z = 0.1;
   pathNode.color.a = 1.0;
 
-  if (smoothed) {
+  if (smoothed)
+  {
     pathNode.color.r = Constants::pink.red;
     pathNode.color.g = Constants::pink.green;
     pathNode.color.b = Constants::pink.blue;
-  } else {
+  }
+  else
+  {
     pathNode.color.r = Constants::purple.red;
     pathNode.color.g = Constants::purple.green;
     pathNode.color.b = Constants::purple.blue;
@@ -107,11 +194,13 @@ void Path::addNode(const Node3D& node, int i) {
   pathNodes.markers.push_back(pathNode);
 }
 
-void Path::addVehicle(const Node3D& node, int i) {
+void Path::addVehicle(const Node3D &node, int i)
+{
   visualization_msgs::Marker pathVehicle;
 
   // delete all previous markersg
-  if (i == 1) {
+  if (i == 1)
+  {
     pathVehicle.action = 3;
   }
 
@@ -124,11 +213,14 @@ void Path::addVehicle(const Node3D& node, int i) {
   pathVehicle.scale.z = 1;
   pathVehicle.color.a = 0.1;
 
-  if (smoothed) {
+  if (smoothed)
+  {
     pathVehicle.color.r = Constants::orange.red;
     pathVehicle.color.g = Constants::orange.green;
     pathVehicle.color.b = Constants::orange.blue;
-  } else {
+  }
+  else
+  {
     pathVehicle.color.r = Constants::teal.red;
     pathVehicle.color.g = Constants::teal.green;
     pathVehicle.color.b = Constants::teal.blue;

@@ -7,7 +7,7 @@ using namespace HybridAStar;
 float aStar(Node2D& start, Node2D& goal, Node2D* nodes2D, int width, int height, CollisionDetection& configurationSpace, Visualize& visualization);
 void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLookup, int width, int height, CollisionDetection& configurationSpace, Visualize& visualization);
 Node3D* dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& configurationSpace);
-
+Node3D* ReedsSheppShot(Node3D& start, const Node3D& goal, CollisionDetection& configurationSpace);
 //###################################################
 //                                    NODE COMPARISON
 //###################################################
@@ -36,7 +36,8 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
                                int height,
                                CollisionDetection& configurationSpace,
                                float* dubinsLookup,
-                               Visualize& visualization) {
+                               Visualize& visualization,
+                               Path& path) {
 
   // PREDECESSOR AND SUCCESSOR INDEX
   int iPred, iSucc;
@@ -141,19 +142,21 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
     if (nodes3D[iPred].isClosed()) {
       // pop node from the open list and start with a fresh node
       O.pop();
+      std::cout << "in iteration : "<< iterations << std::endl;
       continue;
     }
     // _________________
     // EXPANSION OF NODE
     else if (nodes3D[iPred].isOpen()) {
       // add node to closed list
+      std::cout << "in iteration : "<< iterations << std::endl;
       nodes3D[iPred].close();
       // remove node from open list
       O.pop();
 
       // _________
       // GOAL TEST
-      if (*nPred == goal || iterations > Constants::iterations) {
+      if (*nPred == goal || iterations > Constants::iterations/10) {
         // DEBUG
         return nPred;
       }
@@ -163,12 +166,16 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
       else {
         // _______________________
         // SEARCH WITH DUBINS SHOT
-        if (Constants::dubinsShot && nPred->isInRange(goal) && nPred->getPrim() < 3) {
-          nSucc = dubinsShot(*nPred, goal, configurationSpace);
-
+        //if (Constants::dubinsShot && nPred->isInRange(goal) && nPred->getPrim() < 6) {
+        if (1) {
+          std::cout << "in iteration : "<< iterations << std::endl;
+          //nSucc = dubinsShot(*nPred, goal, configurationSpace);
+          nSucc = ReedsSheppShot(*nPred, goal, configurationSpace);
+          
           if (nSucc != nullptr && *nSucc == goal) {
             //DEBUG
             // std::cout << "max diff " << max << std::endl;
+            
             return nSucc;
           }
         }
@@ -180,8 +187,11 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
           nSucc = nPred->createSuccessor(i);
           // set index of the successor
           iSucc = nSucc->setIdx(width, height);
-
+          nSucc->setIsRS(false);
+          nSucc->setMovingDirection(i);
           // ensure successor is on grid and traversable
+          int ttbool = configurationSpace.isTraversable(nSucc)? 1 : 0;
+          //ROS_INFO("nsuccess, is traversable : %d ",ttbool);
           if (nSucc->isOnGrid(width, height) && configurationSpace.isTraversable(nSucc)) {
 
             // ensure successor is not on closed list or it has the same index as the predecessor
@@ -196,7 +206,7 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
 
                 // calculate H value
                 updateH(*nSucc, goal, nodes2D, dubinsLookup, width, height, configurationSpace, visualization);
-
+                //std::cout<<"the distance to the goal : " << nSucc->getDistToGoal(&goal)<<std::endl;
                 // if the successor is in the same cell but the C value is larger
                 if (iPred == iSucc && nSucc->getC() > nPred->getC() + Constants::tieBreaker) {
                   delete nSucc;
@@ -210,7 +220,7 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
                 if (nSucc->getPred() == nSucc) {
                   std::cout << "looping";
                 }
-
+                path.publish_search_tree(nPred,nSucc);
                 // put successor on open list
                 nSucc->open();
                 nodes3D[iSucc] = *nSucc;
@@ -416,7 +426,7 @@ void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLo
 
   // if reversing is active use a
   if (Constants::reverse && !Constants::dubins) {
-    //    ros::Time t0 = ros::Time::now();
+        //ros::Time t0 = ros::Time::now();
     ompl::base::ReedsSheppStateSpace reedsSheppPath(Constants::r);
     State* rsStart = (State*)reedsSheppPath.allocState();
     State* rsEnd = (State*)reedsSheppPath.allocState();
@@ -425,36 +435,38 @@ void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLo
     rsEnd->setXY(goal.getX(), goal.getY());
     rsEnd->setYaw(goal.getT());
     reedsSheppCost = reedsSheppPath.distance(rsStart, rsEnd);
-    //    ros::Time t1 = ros::Time::now();
-    //    ros::Duration d(t1 - t0);
-    //    std::cout << "calculated Reed-Sheep Heuristic in ms: " << d * 1000 << std::endl;
+        //ros::Time t1 = ros::Time::now();
+        //ros::Duration d(t1 - t0);
+        //std::cout << "calculated Reed-Sheep Heuristic in ms: " << d * 1000 << std::endl;
   }
 
   // if twoD heuristic is activated determine shortest path
   // unconstrained with obstacles
   if (Constants::twoD && !nodes2D[(int)start.getY() * width + (int)start.getX()].isDiscovered()) {
-    //    ros::Time t0 = ros::Time::now();
+     //   ros::Time t0 = ros::Time::now();
     // create a 2d start node
     Node2D start2d(start.getX(), start.getY(), 0, 0, nullptr);
     // create a 2d goal node
     Node2D goal2d(goal.getX(), goal.getY(), 0, 0, nullptr);
     // run 2d astar and return the cost of the cheapest path for that node
     nodes2D[(int)start.getY() * width + (int)start.getX()].setG(aStar(goal2d, start2d, nodes2D, width, height, configurationSpace, visualization));
-    //    ros::Time t1 = ros::Time::now();
-    //    ros::Duration d(t1 - t0);
-    //    std::cout << "calculated 2D Heuristic in ms: " << d * 1000 << std::endl;
+     //   ros::Time t1 = ros::Time::now();
+    //   ros::Duration d(t1 - t0);
+     //   std::cout << "calculated 2D Heuristic in ms: " << d * 1000 << std::endl;
   }
 
   if (Constants::twoD) {
     // offset for same node in cell
     twoDoffset = sqrt(((start.getX() - (long)start.getX()) - (goal.getX() - (long)goal.getX())) * ((start.getX() - (long)start.getX()) - (goal.getX() - (long)goal.getX())) +
                       ((start.getY() - (long)start.getY()) - (goal.getY() - (long)goal.getY())) * ((start.getY() - (long)start.getY()) - (goal.getY() - (long)goal.getY())));
-    twoDCost = nodes2D[(int)start.getY() * width + (int)start.getX()].getG() - twoDoffset;
+    //twoDCost = nodes2D[(int)start.getY() * width + (int)start.getX()].getG() - twoDoffset;
 
+    twoDCost = nodes2D[(int)start.getY() * width + (int)start.getX()].getG();
   }
 
   // return the maximum of the heuristics, making the heuristic admissable
   start.setH(std::max(reedsSheppCost, std::max(dubinsCost, twoDCost)));
+  //start.setH(twoDCost);
 }
 
 //###################################################
@@ -509,4 +521,153 @@ Node3D* dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& config
 
   //  std::cout << "Dubins shot connected, returning the path" << "\n";
   return &dubinsNodes[i - 1];
+}
+
+/******************************ReedsShepp shot*****************
+ */
+Node3D* ReedsSheppShot(Node3D& start, const Node3D& goal, CollisionDetection& configurationSpace) {
+    // start
+    ompl::base::ReedsSheppStateSpace::ReedsSheppPath rsPath;
+    double q0[3] = {start.getX(),start.getY(),start.getT()};
+    double q1[3] = {goal.getX(),goal.getY(),goal.getT()};
+    ompl::base::ReedsSheppStateSpace reedsSheppPath(Constants::r);
+    State* rsStart = (State*)reedsSheppPath.allocState();
+    State* rsEnd = (State*)reedsSheppPath.allocState();
+    rsStart->setXY(q0[0], q0[1]);
+    rsStart->setYaw(q0[2]);
+    rsEnd->setXY(q1[0],q1[1]);
+    rsEnd->setYaw(q1[2]);
+    rsPath = reedsSheppPath.reedsShepp(rsStart,rsEnd);
+
+    vector<Node3D> vec;
+    double newStart[3]={q0[0],q0[1],q0[2]};
+    for(int i = 0; i<5; i++){
+        if(rsPath.type_[i] == 0){
+            continue;
+        }
+
+        if(rsPath.type_[i] == 1) // left turn 
+        {
+            get_left_turn(newStart,Constants::r * rsPath.length_[i],vec);
+        }
+        else if(rsPath.type_[i] == 2) //straight
+        {
+            get_straight(newStart,Constants::r * rsPath.length_[i],vec);
+        }
+        else if(rsPath.type_[i] == 3) // right turn
+        {
+            get_right_turn(newStart,Constants::r * rsPath.length_[i],vec);
+        }
+    }
+
+    Node3D tmpNode;
+    
+    tmpNode.setX(newStart[0]);
+    tmpNode.setY(newStart[1]);
+    tmpNode.setT(newStart[2]);
+    tmpNode.setIsRS(true);
+    tmpNode.setRSMotionType(1);//whatever is ok
+    vec.push_back(tmpNode);
+
+    int num_vec =vec.size();
+    Node3D* nPred;
+    Node3D* nSucc;
+    Node3D* newNodes = new Node3D [num_vec];
+    for(int i = 0; i<num_vec; i++){
+        if(i == 0){
+            Node3D tt(vec[i].getX(),vec[i].getY(),vec[i].getT(),0,0,&start);
+            newNodes[i] = tt;
+            nPred = &newNodes[i];
+        }else{
+            Node3D tt(vec[i].getX(),vec[i].getY(),vec[i].getT(),0,0,nPred);
+            newNodes[i] = tt;
+            nPred = &newNodes[i];
+        }
+        //int ttint = configurationSpace.isTraversable(&newNodes[i])? 1:0;
+        //ROS_INFO("reedsshep shot is traversable : %d ",ttint);
+        if(configurationSpace.isTraversable(&newNodes[i]))
+        {
+
+            if (&newNodes[i] == newNodes[i].getPred()) {
+                std::cout << "looping shot";
+            }   
+
+        }
+        else{
+            delete [] newNodes;
+            return nullptr;
+        }
+        
+        
+    }
+    std::cout << "all check success, check node number :" <<vec.size()<< std::endl;
+    return &newNodes[vec.size()-1];
+
+/*
+  std::cout<< "I am near while(x<length)" << std::endl;
+  std::vector<std::vector<float>> vec;
+  reedshepp_sample(path, q0, vec);
+  std::cout<< "I am after reedshepp_sample" << std::endl;
+  Node3D* reedsSheppNodes = new Node3D [vec.size()];
+  for(int i = 0; i<vec.size(); i++){
+    reedsSheppNodes[i].setX(vec[i][0]);
+    reedsSheppNodes[i].setY(vec[i][1]);
+    reedsSheppNodes[i].setT(vec[i][2]);
+    if(configurationSpace.isTraversable(&reedsSheppNodes[i]))
+    {
+      if (i > 0) {
+        reedsSheppNodes[i].setPred(&reedsSheppNodes[i - 1]);
+      } else {
+        reedsSheppNodes[i].setPred(&start);
+      }
+      if (&reedsSheppNodes[i] == reedsSheppNodes[i].getPred()) {
+        std::cout << "looping shot";
+      }
+
+    }
+    else{
+      delete [] reedsSheppNodes;
+      return nullptr;
+    }
+  }
+
+  return &reedsSheppNodes[vec.size()-1];
+  */
+  /*
+  while(x<length){
+    std::cout<< "I am in while(x<length)" << std::endl;
+    double t = x/length;
+    reedsSheppPath.interpolate(rsStart,rsEnd,t,midState);
+    std::cout<< "I am after reedsSheppPath.interpolate" << std::endl;
+    reedsSheppNodes[i].setX(midState->getX());
+    reedsSheppNodes[i].setY(midState->getY());
+    reedsSheppNodes[i].setT(midState->getYaw());
+    // collision check
+    if (configurationSpace.isTraversable(&reedsSheppNodes[i])) {
+
+      // set the predecessor to the previous step
+      if (i > 0) {
+        reedsSheppNodes[i].setPred(&reedsSheppNodes[i - 1]);
+      } else {
+        reedsSheppNodes[i].setPred(&start);
+      }
+
+      if (&reedsSheppNodes[i] == reedsSheppNodes[i].getPred()) {
+        std::cout << "looping shot";
+      }
+
+      x += Constants::dubinsStepSize;
+      i++;
+    } else {
+      //      std::cout << "Dubins shot collided, discarding the path" << "\n";
+      // delete all nodes
+      delete [] reedsSheppNodes;
+      return nullptr;
+    }
+
+  }
+  std::cout << "I am out ReedsheppShot"<<std::endl;
+  //  std::cout << "Dubins shot connected, returning the path" << "\n";
+  return &reedsSheppNodes[i - 1];
+  */
 }

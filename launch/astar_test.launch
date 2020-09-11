@@ -1,0 +1,6 @@
+<launch>
+ <!-- Turn on hybrid_astar node -->
+<node name="astar_test" pkg="hybrid_astar" type="astar_test" />
+ <node name="map_server" pkg="map_server" type="map_server" args="$(find hybrid_astar)/maps/map.yaml" />
+ 
+</launch>

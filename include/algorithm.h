@@ -12,7 +12,8 @@ typedef ompl::base::SE2StateSpace::StateType State;
 #include "node2d.h"
 #include "visualize.h"
 #include "collisiondetection.h"
-
+#include "reedshepp.h"
+#include "path.h"
 namespace HybridAStar {
 class Node3D;
 class Node2D;
@@ -49,7 +50,8 @@ class Algorithm {
                              int height,
                              CollisionDetection& configurationSpace,
                              float* dubinsLookup,
-                             Visualize& visualization);
+                             Visualize& visualization,
+                             Path & path);
 
 };
 }

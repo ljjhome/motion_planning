@@ -68,6 +68,7 @@ typedef struct
  */
 typedef int (*DubinsPathSamplingCallback)(double q[3], double t, void* user_data);
 
+
 /**
  * Generate a path from an initial configuration to
  * a target configuration, with a specified maximum turning

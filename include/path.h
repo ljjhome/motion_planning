@@ -11,6 +11,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseArray.h>
 #include <visualization_msgs/MarkerArray.h>
+#include <visualization_msgs/Marker.h>
 
 #include "node3d.h"
 #include "constants.h"
@@ -39,6 +40,7 @@ class Path {
     pubPath = n.advertise<nav_msgs::Path>(pathTopic, 1);
     pubPathNodes = n.advertise<visualization_msgs::MarkerArray>(pathNodesTopic, 1);
     pubPathVehicles = n.advertise<visualization_msgs::MarkerArray>(pathVehicleTopic, 1);
+    pubPathTree = n.advertise<visualization_msgs::Marker>("visualization_marker11", 10);
 
     // CONFIGURE THE CONTAINER
     path.header.frame_id = "path";
@@ -88,6 +90,10 @@ class Path {
   /// Publishes the vehicle along the path
   void publishPathVehicles() { pubPathVehicles.publish(pathVehicles); }
 
+   void publishLineSeg(Node3D * nstart, Node3D * ngoal);
+
+   void publish_search_tree(Node3D* nstart, Node3D* ngoal);
+   void cleanPathTree();
  private:
   /// A handle to the ROS node
   ros::NodeHandle n;
@@ -98,13 +104,19 @@ class Path {
   /// Publisher for the vehicle along the path
   ros::Publisher pubPathVehicles;
   /// Path data structure for visualization
+  ros::Publisher pubPathTree;
   nav_msgs::Path path;
   /// Nodes data structure for visualization
   visualization_msgs::MarkerArray pathNodes;
   /// Vehicle data structure for visualization
   visualization_msgs::MarkerArray pathVehicles;
   /// Value that indicates that the path is smoothed/post processed
+
+  // path tree
+  visualization_msgs::Marker line_list;
   bool smoothed = false;
+
+
 };
 }
 #endif // PATH_H

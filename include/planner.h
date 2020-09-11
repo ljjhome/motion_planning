@@ -20,6 +20,7 @@
 #include "smoother.h"
 #include "visualize.h"
 #include "lookup.h"
+#include "reedshepp.h"
 
 namespace HybridAStar {
 /*!
@@ -77,6 +78,10 @@ class Planner {
   tf::TransformListener listener;
   /// A transform for moving start positions
   tf::StampedTransform transform;
+
+
+  // jjpath
+  Path jjpath;
   /// The path produced by the hybrid A* algorithm
   Path path;
   /// The smoother used for optimizing the path
@@ -100,7 +105,7 @@ class Planner {
   /// Flags for allowing the planner to plan
   bool validGoal = false;
   /// A lookup table for configurations of the vehicle and their spatial occupancy enumeration
-  Constants::config collisionLookup[Constants::headings * Constants::positions];
+  Constants::config *collisionLookup;
   /// A lookup of analytical solutions (Dubin's paths)
   float* dubinsLookup = new float [Constants::headings * Constants::headings * Constants::dubinsWidth * Constants::dubinsWidth];
 };

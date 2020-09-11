@@ -20,6 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
     std_msgs
     tf
     )
+find_package( OpenCV REQUIRED )
 
 set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/algorithm.cpp
@@ -33,6 +34,8 @@ set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/dubins.cpp #Andrew Walker
     ${CMAKE_CURRENT_SOURCE_DIR}/src/dynamicvoronoi.cpp #Boris Lau, Christoph Sprunk, Wolfram Burgard
     ${CMAKE_CURRENT_SOURCE_DIR}/src/bucketedqueue.cpp #Boris Lau, Christoph Sprunk, Wolfram Burgard
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/reedshepp.cpp #lijijaun
+    
     )
 set(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/include/algorithm.h
@@ -52,6 +55,7 @@ set(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/include/dynamicvoronoi.h #Boris Lau, Christoph Sprunk, Wolfram Burgard
     ${CMAKE_CURRENT_SOURCE_DIR}/include/bucketedqueue.h #Boris Lau, Christoph Sprunk, Wolfram Burgard
     ${CMAKE_CURRENT_SOURCE_DIR}/include/point.h #Boris Lau, Christoph Sprunk, Wolfram Burgard
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/reedshepp.h #lijijaun
 
     )
 add_library(HYAS ${SOURCES} ${HEADERS})
@@ -76,6 +80,22 @@ target_link_libraries(tf_broadcaster ${catkin_LIBRARIES})
 add_executable(hybrid_astar src/main.cpp ${HEADERS} ${SOURCES})
 target_link_libraries(hybrid_astar ${catkin_LIBRARIES})
 target_link_libraries(hybrid_astar ${OMPL_LIBRARIES})
+
+add_executable(main_test1 src/main_test1 ${HEADERS} ${SOURCES})
+target_link_libraries(main_test1 ${catkin_LIBRARIES})
+target_link_libraries(main_test1 ${OMPL_LIBRARIES})
+
+add_executable(opencv_read_map src/opencv_map_gen/opencv_test.cpp)
+target_link_libraries( opencv_read_map ${OpenCV_LIBS} ${catkin_LIBRARIES})
+
+add_executable(cv_collision_test src/opencv_map_gen/cv_collision_test.cpp ${HEADERS} ${SOURCES})
+target_link_libraries(cv_collision_test ${OMPL_LIBRARIES})
+target_link_libraries( cv_collision_test ${OpenCV_LIBS} ${catkin_LIBRARIES})
+
+add_executable(astar_test src/astar_test/astar.cpp ${HEADERS} ${SOURCES})
+target_link_libraries(astar_test ${OMPL_LIBRARIES})
+target_link_libraries( astar_test ${OpenCV_LIBS} ${catkin_LIBRARIES})
+
 
 install(TARGETS ${PROJECT_NAME} tf_broadcaster
     ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

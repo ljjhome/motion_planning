@@ -32,11 +32,11 @@ namespace Constants {
 /// A flag for additional debugging output via `std::cout`
 static const bool coutDEBUG = false;
 /// A flag for the mode (true = manual; false = dynamic). Manual for static map or dynamic for dynamic map.
-static const bool manual = true;
+static const bool manual = false;
 /// A flag for the visualization of 3D nodes (true = on; false = off)
-static const bool visualization = false && manual;
+static const bool visualization = true && manual;
 /// A flag for the visualization of 2D nodes (true = on; false = off)
-static const bool visualization2D = false && manual;
+static const bool visualization2D = true && manual;
 /// A flag to toggle reversing (true = on; false = off)
 static const bool reverse = true;
 /// A flag to toggle the connection of the path via Dubin's shot (true = on; false = off)
@@ -60,11 +60,15 @@ static const int iterations = 30000;
 /// [m] --- Uniformly adds a padding around the vehicle
 static const double bloating = 0;
 /// [m] --- The width of the vehicle
-static const double width = 1.75 + 2 * bloating;
+static const double width = 1.8 + 2 * bloating;
+//static const double width = (1.8 + 2 * bloating)/0.2;
 /// [m] --- The length of the vehicle
-static const double length = 2.65 + 2 * bloating;
+//static const double length = 2.65 + 2 * bloating;
+static const double length = 4.75 + 2 * bloating;
+//static const double length = (4 + 2 * bloating)/0.2;
 /// [m] --- The minimum turning radius of the vehicle
 static const float r = 6;
+//static const float r = 6/0.2;
 /// [m] --- The number of discretizations in heading
 static const int headings = 72;
 /// [°] --- The discretization value of the heading (goal condition)
@@ -74,7 +78,7 @@ static const float deltaHeadingRad = 2 * M_PI / (float)headings;
 /// [c*M_PI] --- The heading part of the goal condition
 static const float deltaHeadingNegRad = 2 * M_PI - deltaHeadingRad;
 /// [m] --- The cell size of the 2D grid of the world
-static const float cellSize = 1;
+static const float cellSize = 1.0;
 /*!
   \brief [m] --- The tie breaker breaks ties between nodes expanded in the same cell
 
@@ -136,7 +140,7 @@ struct config {
      \brief The maximum number of occupied cells
      \todo needs to be dynamic
   */
-  relPos pos[64];
+  relPos pos[1000];
 };
 
 // _________________

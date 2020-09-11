@@ -38,7 +38,11 @@ class Smoother {
   void tracePath(const Node3D* node, int i = 0, std::vector<Node3D> path = std::vector<Node3D>());
 
   /// returns the path of the smoother object
-  std::vector<Node3D> getPath() {return path;}
+  std::vector<Node3D> getPath() 
+  {
+     //std::cout << "path size:  "<< path.size() << std::endl;
+     return path;
+   }
 
   /// obstacleCost - pushes the path away from obstacles
   Vector2D obstacleTerm(Vector2D xi);
