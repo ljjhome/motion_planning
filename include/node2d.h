@@ -65,7 +65,7 @@ class Node2D {
   /// close the node
   void close() { c = true; o = false; }
   /// set the node neither open nor closed
-  void reset() { c = false; o = false; }
+  void reset() { c = false; o = false; d = false; }
   /// discover the node
   void discover() { d = true; }
   /// set a pointer to the predecessor of the node

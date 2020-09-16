@@ -97,6 +97,14 @@ void Smoother::tracePath(const Node3D* node, int i, std::vector<Node3D> path) {
   //std::cout << "in tracePath node Pred:  " << node->getPred()<<std::endl;
   tracePath(node->getPred(), i, path);
 }
+void Smoother::jjtracePath(const Node3D *node)
+{
+  while(node != nullptr)
+  {
+    path.push_back(*node);
+    node = node->getPred();
+  }
+}
 
 //###################################################
 //                                      OBSTACLE TERM

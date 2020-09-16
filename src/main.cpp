@@ -55,9 +55,22 @@ int main(int argc, char** argv) {
   }
 
   ros::init(argc, argv, "a_star");
-
+  
   HybridAStar::Planner hy;
-  hy.plan(); 
+  ros::Rate r(1);
+  while(ros::ok()){
+    
+    ros::Time t0 = ros::Time::now();
+    hy.plan();
+    ros::Time t1 = ros::Time::now();
+    ros::Duration d2(t1 - t0);
+    //std::cout << "calculated total planning time shot in ms: " << d2 * 1000 << std::endl;
+      
+      r.sleep();
+      ros::spinOnce();
+
+  }
+   
 
   ros::spin();
   return 0;

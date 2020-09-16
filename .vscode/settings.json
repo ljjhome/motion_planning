@@ -57,6 +57,7 @@
         "random": "cpp",
         "set": "cpp",
         "string": "cpp",
-        "list": "cpp"
+        "list": "cpp",
+        "*.ipp": "cpp"
     }
 }

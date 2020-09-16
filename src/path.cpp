@@ -102,7 +102,7 @@ void Path::publishLineSeg(Node3D *nstart, Node3D *ngoal)
 
 }
 
-void Path::publish_search_tree(Node3D *nstart, Node3D *ngoal){
+void Path::publish_search_tree(const Node3D *nstart, const Node3D *ngoal){
   line_list.header.frame_id = "path";
   line_list.header.stamp = ros::Time::now();
   line_list.ns = "points_and_lines";

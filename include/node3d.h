@@ -30,6 +30,12 @@ class Node3D {
     this->prim = prim;
   }
 
+  void reset(){
+    
+    this->o = true;
+    this->c = false;
+    
+  }
   // GETTER METHODS
   /// get the x position
   float getX() const { return x; }

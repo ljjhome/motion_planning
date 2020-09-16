@@ -30,6 +30,14 @@ Planner::Planner()
 
   subGoal = n.subscribe("/move_base_simple/goal", 1, &Planner::setGoal, this);
   subStart = n.subscribe("/initialpose", 1, &Planner::setStart, this);
+  nodes3D = new Node3D[91969272]();
+  nodes2D = new Node2D[1277351]();
+  binMap = new bool *[1501];
+
+  for (int x = 0; x < 1501; x++)
+  {
+    binMap[x] = new bool[851];
+  }
 };
 
 //###################################################
@@ -50,6 +58,9 @@ void Planner::initializeLookups()
 //###################################################
 void Planner::setMap(const nav_msgs::OccupancyGrid::Ptr map)
 {
+  //ros::Time t0 = ros::Time::now();
+  //double t0_sec = t0.toSec();
+  //int t0_sec_int = int(t0_sec);
   if (Constants::coutDEBUG)
   {
     std::cout << "I am seeing the map..." << std::endl;
@@ -57,30 +68,32 @@ void Planner::setMap(const nav_msgs::OccupancyGrid::Ptr map)
   //std::cout << "I'm in setMap function" <<std::endl;
   int height = map->info.height;
   int width = map->info.width;
-  bool **binMap;
+  
   grid = map;
+  int num_of_unknow_point = 0;
   for (int x = 0; x < width; ++x)
   {
     for (int y = 0; y < height; ++y)
     {
       
-      if(map->data[y * width + x] == -1){
-        map->data[y * width + x] = 0;
+      if(grid->data[y * width + x] == -1){
+          num_of_unknow_point++;
+
+        grid->data[y * width + x] = 0;
       }
     }
   }
+  //std::cout << "num of unknow point : " << num_of_unknow_point << std::endl;
   //update the configuration space with the current map
-  configurationSpace.updateGrid(map);
+  configurationSpace.updateGrid(grid);
   //create array for Voronoi diagram
-  //  ros::Time t0 = ros::Time::now();
   
-  binMap = new bool *[width];
 
-  for (int x = 0; x < width; x++)
-  {
-    binMap[x] = new bool[height];
-  }
-/*
+  
+  
+  //std::cout << "width : " << width <<" height : "<<height<<std::endl;
+  /*
+  ros::Time t4 = ros::Time::now();
   for (int x = 0; x < width; ++x)
   {
     for (int y = 0; y < height; ++y)
@@ -91,16 +104,49 @@ void Planner::setMap(const nav_msgs::OccupancyGrid::Ptr map)
       }
     }
   }
-*/
-  //voronoiDiagram.initializeMap(width, height, binMap);
-  //voronoiDiagram.update();
-  //voronoiDiagram.visualize();
-  //  ros::Time t1 = ros::Time::now();
-  //  ros::Duration d(t1 - t0);
-  //  std::cout << "created Voronoi Diagram in ms: " << d * 1000 << std::endl;
+  ros::Time t5 = ros::Time::now();
+  ros::Duration d4(t5 - t4);
+  std::cout << "binaMap for loop time in ms: " << d4 * 1000 << std::endl;
+  */
+  //std::cout << "before voronoi " <<std::endl;
 
+  /*
+  ros::Time t0 = ros::Time::now();
+
+  voronoiDiagram.initializeMap(width, height, binMap);
+  ros::Time t1 = ros::Time::now();
+  ros::Duration d(t1 - t0);
+  std::cout << "initializeMap in ms: " << d * 1000 << std::endl;
+
+  ros::Time t2 = ros::Time::now();
+  voronoiDiagram.update();
+  //std::cout << "after voronoi " <<std::endl;
+  //voronoiDiagram.visualize();
+  ros::Time t3 = ros::Time::now();
+  ros::Duration d2(t3 - t2);
+  std::cout << "voronoiDiagram.update in ms: " << d2 * 1000 << std::endl;
+  */
   // plan if the switch is not set to manual and a transform is available
   //if (!Constants::manual && listener.canTransform("/map", ros::Time(0), "/base_link", ros::Time(0), "/map", nullptr))
+
+/*
+  start.pose.pose.position.x = 39.786 ;
+  start.pose.pose.position.y = 138.256 ;
+  start.pose.pose.orientation.x = 0;
+  start.pose.pose.orientation.y = 0;
+  start.pose.pose.orientation.z = 0.0602922;
+  start.pose.pose.orientation.w = 0.998181;
+
+  goal.pose.position.x = 75.9824;
+  goal.pose.position.y = 127.341;
+  goal.pose.orientation.x = 0;
+  goal.pose.orientation.y = 0;
+  goal.pose.orientation.z = -0.732487;
+  goal.pose.orientation.w = -0.732487;
+  validStart = true;
+  validGoal = true;
+  */
+  
   if (!Constants::manual)
   {
     /*
@@ -111,6 +157,7 @@ void Planner::setMap(const nav_msgs::OccupancyGrid::Ptr map)
     start.pose.pose.position.y = transform.getOrigin().y();
     tf::quaternionTFToMsg(transform.getRotation(), start.pose.pose.orientation);
     */
+   /*
     if (grid->info.height >= start.pose.pose.position.y && start.pose.pose.position.y >= 0 &&
         grid->info.width >= start.pose.pose.position.x && start.pose.pose.position.x >= 0)
     {
@@ -121,9 +168,20 @@ void Planner::setMap(const nav_msgs::OccupancyGrid::Ptr map)
     {
       validStart = false;
     }
-    std::cout << "before planning"<<std::endl;
-    plan();
+    */
+    //std::cout << "in set map before planning"<<std::endl;
+    
+    //plan();
+
+    /*
+    ros::Time t1 = ros::Time::now();
+    ros::Duration d2(t1 - t0);
+    std::cout << "total in setMap time shot in ms: " << d2 * 1000 
+    <<"absolute time in setMap : "<<t0_sec_int % 1000 + (t0_sec-t0_sec_int) << std::endl;
+    */
+
   }
+  
 }
 
 //###################################################
@@ -131,6 +189,14 @@ void Planner::setMap(const nav_msgs::OccupancyGrid::Ptr map)
 //###################################################
 void Planner::setStart(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &initial)
 {
+  /*
+  std::cout << "copy the start point : "<<initial->pose.pose.position.x
+  <<", "<<initial->pose.pose.position.y
+  <<", "<<initial->pose.pose.orientation.x
+  <<", "<<initial->pose.pose.orientation.y
+  <<", "<<initial->pose.pose.orientation.z
+  <<", "<<initial->pose.pose.orientation.w <<std::endl;
+  */
   float x = initial->pose.pose.position.x / Constants::cellSize;
   float y = initial->pose.pose.position.y / Constants::cellSize;
   float t = tf::getYaw(initial->pose.pose.orientation);
@@ -167,6 +233,14 @@ void Planner::setStart(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr 
 //###################################################
 void Planner::setGoal(const geometry_msgs::PoseStamped::ConstPtr &end)
 {
+  /*
+  std::cout << "copy the goal point : "<<end->pose.position.x
+  <<", "<<end->pose.position.y
+  <<", "<<end->pose.orientation.x
+  <<", "<<end->pose.orientation.y
+  <<", "<<end->pose.orientation.z
+  <<", "<<end->pose.orientation.w <<std::endl;
+  */
   // retrieving goal position
   float x = end->pose.position.x / Constants::cellSize;
   float y = end->pose.position.y / Constants::cellSize;
@@ -198,17 +272,27 @@ void Planner::plan()
   // if a start as well as goal are defined go ahead and plan
   if (validStart && validGoal)
   {
-
+    //ros::Time t0 = ros::Time::now();
     // ___________________________
     // LISTS ALLOWCATED ROW MAJOR ORDER
     int width = grid->info.width;
     int height = grid->info.height;
     int depth = Constants::headings;
     int length = width * height * depth;
+    for(int i = 0;i<length;i++){
+      nodes3D[i].reset();
+    }
+    for(int i = 0;i<width*height;i++){
+      nodes2D[i].reset();
+    }
+    smoother.smootherReset();
     // define list pointers and initialize lists
-    Node3D *nodes3D = new Node3D[length]();
-    Node2D *nodes2D = new Node2D[width * height]();
-
+    //Node3D *nodes3D = new Node3D[length]();
+    //Node2D *nodes2D = new Node2D[width * height]();
+    //std::cout << "length: "<<length << " width*height : "<<width * height <<std::endl;
+    //ros::Time t1 = ros::Time::now();
+    //  ros::Duration d(t1 - t0);
+     // std::cout << "haha TIME in ms: " << d * 1000 << std::endl;
     // ________________________
     // retrieving goal position
     float x = goal.pose.position.x / Constants::cellSize;
@@ -244,7 +328,7 @@ void Planner::plan()
 &*/
     // ___________________________
     // START AND TIME THE PLANNING
-    ros::Time t0 = ros::Time::now();
+    
 
     // CLEAR THE VISUALIZATION
     visualization.clear();
@@ -253,11 +337,13 @@ void Planner::plan()
     smoothedPath.clear();
     path.cleanPathTree();
     // FIND THE PATH
-    Node3D *nSolution = Algorithm::hybridAStar(nStart, nGoal, nodes3D, nodes2D, width, height, configurationSpace, dubinsLookup, visualization,path);
+    
+    Node3D *nSolution = Algorithm::jjhybridAStar(nStart, nGoal, nodes3D, nodes2D, width, height, configurationSpace, dubinsLookup, visualization,path);
+      
     // TRACE THE PATH
     if (nSolution == nullptr)
     {
-      std::cout << "cannot find a path" << std::endl;
+      //std::cout << "cannot find a path" << std::endl;
     }
     else
     {
@@ -273,29 +359,44 @@ void Planner::plan()
       //smoother.smoothPath(voronoiDiagram);
       // CREATE THE UPDATED PATH
       //smoothedPath.updatePath(smoother.getPath());
-      ros::Time t1 = ros::Time::now();
-      ros::Duration d(t1 - t0);
-      std::cout << "TIME in ms: " << d * 1000 << std::endl;
-
+      
+      //std::cout << "already find a path" << std::endl;
       // _________________________________
       // PUBLISH THE RESULTS OF THE SEARCH
+      //ros::Time t02 = ros::Time::now();
       path.publishPath();
       //path.publishPathNodes();
       path.publishPathVehicles();
-      //  smoothedPath.publishPath();
-      /* 
-    smoothedPath.publishPathNodes();
-    smoothedPath.publishPathVehicles();
-    visualization.publishNode3DCosts(nodes3D, width, height, depth);
-    visualization.publishNode2DCosts(nodes2D, width, height);
-  */
+      //ros::Time t12 = ros::Time::now();
+      //ros::Duration d2(t12 - t02);
+      //std::cout << "publishing time in ms: " << d2 * 1000 << std::endl;
+      // smoothedPath.publishPath();
+      
+    //smoothedPath.publishPathNodes();
+    //smoothedPath.publishPathVehicles();
+    //visualization.publishNode3DCosts(nodes3D, width, height, depth);
+    //visualization.publishNode2DCosts(nodes2D, width, height);
+  
     }
-
-    delete[] nodes3D;
-    delete[] nodes2D;
+      
+    
   }
   else
   {
     std::cout << "missing goal or start" << std::endl;
   }
+}
+
+Planner::~Planner(){
+    
+     delete[] nodes3D;
+    delete[] nodes2D;
+    for (int j = 0; j<1501; j++)
+    {
+        delete[] binMap[j];
+    }
+    delete[] binMap;
+      //path.publishPathNodes();
+      //path.publishPathVehicles();
+      
 }

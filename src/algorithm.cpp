@@ -4,40 +4,46 @@
 
 using namespace HybridAStar;
 
-float aStar(Node2D& start, Node2D& goal, Node2D* nodes2D, int width, int height, CollisionDetection& configurationSpace, Visualize& visualization);
-void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLookup, int width, int height, CollisionDetection& configurationSpace, Visualize& visualization);
-Node3D* dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& configurationSpace);
-Node3D* ReedsSheppShot(Node3D& start, const Node3D& goal, CollisionDetection& configurationSpace);
+float aStar(Node2D &start, Node2D &goal, Node2D *nodes2D, int width, int height, CollisionDetection &configurationSpace, Visualize &visualization);
+void updateH(Node3D &start, const Node3D &goal, Node2D *nodes2D, float *dubinsLookup, int width, int height, CollisionDetection &configurationSpace, Visualize &visualization);
+Node3D *dubinsShot(Node3D &start, const Node3D &goal, CollisionDetection &configurationSpace);
+Node3D *ReedsSheppShot(Node3D &start, const Node3D &goal, CollisionDetection &configurationSpace);
 //###################################################
 //                                    NODE COMPARISON
 //###################################################
 /*!
    \brief A structure to sort nodes in a heap structure
 */
-struct CompareNodes {
+struct CompareNodes
+{
   /// Sorting 3D nodes by increasing C value - the total estimated cost
-  bool operator()(const Node3D* lhs, const Node3D* rhs) const {
-    return lhs->getC() > rhs->getC();
+  bool operator()(const Node3D *lhs, const Node3D *rhs) const
+  {
+    return lhs->getH() > rhs->getH();
+    //return lhs->getC() > rhs->getC();
   }
   /// Sorting 2D nodes by increasing C value - the total estimated cost
-  bool operator()(const Node2D* lhs, const Node2D* rhs) const {
+  bool operator()(const Node2D *lhs, const Node2D *rhs) const
+  {
     return lhs->getC() > rhs->getC();
+    //return lhs->getH() > rhs->getH();
   }
 };
 
 //###################################################
 //                                        3D A*
 //###################################################
-Node3D* Algorithm::hybridAStar(Node3D& start,
-                               const Node3D& goal,
-                               Node3D* nodes3D,
-                               Node2D* nodes2D,
+Node3D *Algorithm::hybridAStar(Node3D &start,
+                               const Node3D &goal,
+                               Node3D *nodes3D,
+                               Node2D *nodes2D,
                                int width,
                                int height,
-                               CollisionDetection& configurationSpace,
-                               float* dubinsLookup,
-                               Visualize& visualization,
-                               Path& path) {
+                               CollisionDetection &configurationSpace,
+                               float *dubinsLookup,
+                               Visualize &visualization,
+                               Path &path)
+{
 
   // PREDECESSOR AND SUCCESSOR INDEX
   int iPred, iSucc;
@@ -51,13 +57,15 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
   ros::Duration d(0.003);
 
   // OPEN LIST AS BOOST IMPLEMENTATION
-  typedef boost::heap::binomial_heap<Node3D*,
-          boost::heap::compare<CompareNodes>
-          > priorityQueue;
+  typedef boost::heap::binomial_heap<Node3D *,
+                                     boost::heap::compare<CompareNodes>>
+      priorityQueue;
   priorityQueue O;
 
   // update h value
+
   updateH(start, goal, nodes2D, dubinsLookup, width, height, configurationSpace, visualization);
+
   // mark start as open
   start.open();
   // push on priority queue aka open list
@@ -66,13 +74,17 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
   nodes3D[iPred] = start;
 
   // NODE POINTER
-  Node3D* nPred;
-  Node3D* nSucc;
+  Node3D *nPred;
+  Node3D *nSucc;
 
   // float max = 0.f;
 
   // continue until O empty
-  while (!O.empty()) {
+
+  while (!O.empty())
+  {
+
+    //std::cout << "calculated total while time shot in ms: " << d2 * 1000 << std::endl;
 
     //    // DEBUG
     //    Node3D* pre = nullptr;
@@ -130,7 +142,8 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
     iterations++;
 
     // RViz visualization
-    if (Constants::visualization) {
+    if (Constants::visualization)
+    {
       visualization.publishNode3DPoses(*nPred);
       visualization.publishNode3DPose(*nPred);
       d.sleep();
@@ -139,50 +152,59 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
     // _____________________________
     // LAZY DELETION of rewired node
     // if there exists a pointer this node has already been expanded
-    if (nodes3D[iPred].isClosed()) {
+    if (nodes3D[iPred].isClosed())
+    {
       // pop node from the open list and start with a fresh node
       O.pop();
-      std::cout << "in iteration : "<< iterations << std::endl;
+      //std::cout << "in iteration : "<< iterations << std::endl;
       continue;
     }
     // _________________
     // EXPANSION OF NODE
-    else if (nodes3D[iPred].isOpen()) {
+    else if (nodes3D[iPred].isOpen())
+    {
       // add node to closed list
-      std::cout << "in iteration : "<< iterations << std::endl;
+      //std::cout << "in iteration : "<< iterations << std::endl;
       nodes3D[iPred].close();
       // remove node from open list
       O.pop();
 
       // _________
       // GOAL TEST
-      if (*nPred == goal || iterations > Constants::iterations/10) {
+      if (*nPred == goal || iterations > Constants::iterations / 10)
+      {
         // DEBUG
+        std::cout << "go into success with iterations : " << iterations << std::endl;
         return nPred;
       }
 
       // ____________________
       // CONTINUE WITH SEARCH
-      else {
+      else
+      {
         // _______________________
         // SEARCH WITH DUBINS SHOT
         //if (Constants::dubinsShot && nPred->isInRange(goal) && nPred->getPrim() < 6) {
-        if (1) {
-          std::cout << "in iteration : "<< iterations << std::endl;
+        if (1)
+        {
+          //std::cout << "in iteration : "<< iterations << std::endl;
           //nSucc = dubinsShot(*nPred, goal, configurationSpace);
+
           nSucc = ReedsSheppShot(*nPred, goal, configurationSpace);
-          
-          if (nSucc != nullptr && *nSucc == goal) {
+
+          if (nSucc != nullptr && *nSucc == goal)
+          {
             //DEBUG
             // std::cout << "max diff " << max << std::endl;
-            
+
             return nSucc;
           }
         }
 
         // ______________________________
         // SEARCH WITH FORWARD SIMULATION
-        for (int i = 0; i < dir; i++) {
+        for (int i = 0; i < dir; i++)
+        {
           // create possible successor
           nSucc = nPred->createSuccessor(i);
           // set index of the successor
@@ -190,51 +212,209 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
           nSucc->setIsRS(false);
           nSucc->setMovingDirection(i);
           // ensure successor is on grid and traversable
-          int ttbool = configurationSpace.isTraversable(nSucc)? 1 : 0;
+          int ttbool = configurationSpace.isTraversable(nSucc) ? 1 : 0;
           //ROS_INFO("nsuccess, is traversable : %d ",ttbool);
-          if (nSucc->isOnGrid(width, height) && configurationSpace.isTraversable(nSucc)) {
+          if (nSucc->isOnGrid(width, height) && configurationSpace.isTraversable(nSucc))
+          {
 
             // ensure successor is not on closed list or it has the same index as the predecessor
-            if (!nodes3D[iSucc].isClosed() || iPred == iSucc) {
+            if (!nodes3D[iSucc].isClosed() || iPred == iSucc)
+            {
 
               // calculate new G value
               nSucc->updateG();
               newG = nSucc->getG();
 
               // if successor not on open list or found a shorter way to the cell
-              if (!nodes3D[iSucc].isOpen() || newG < nodes3D[iSucc].getG() || iPred == iSucc) {
+              if (!nodes3D[iSucc].isOpen() || newG < nodes3D[iSucc].getG() || iPred == iSucc)
+              {
 
                 // calculate H value
+
                 updateH(*nSucc, goal, nodes2D, dubinsLookup, width, height, configurationSpace, visualization);
+
                 //std::cout<<"the distance to the goal : " << nSucc->getDistToGoal(&goal)<<std::endl;
                 // if the successor is in the same cell but the C value is larger
-                if (iPred == iSucc && nSucc->getC() > nPred->getC() + Constants::tieBreaker) {
+                if (iPred == iSucc && nSucc->getC() > nPred->getC() + Constants::tieBreaker)
+                {
                   delete nSucc;
                   continue;
                 }
                 // if successor is in the same cell and the C value is lower, set predecessor to predecessor of predecessor
-                else if (iPred == iSucc && nSucc->getC() <= nPred->getC() + Constants::tieBreaker) {
+                else if (iPred == iSucc && nSucc->getC() <= nPred->getC() + Constants::tieBreaker)
+                {
                   nSucc->setPred(nPred->getPred());
                 }
 
-                if (nSucc->getPred() == nSucc) {
+                if (nSucc->getPred() == nSucc)
+                {
                   std::cout << "looping";
                 }
-                path.publish_search_tree(nPred,nSucc);
+                path.publish_search_tree(nPred, nSucc);
                 // put successor on open list
                 nSucc->open();
                 nodes3D[iSucc] = *nSucc;
                 O.push(&nodes3D[iSucc]);
                 delete nSucc;
-              } else { delete nSucc; }
-            } else { delete nSucc; }
-          } else { delete nSucc; }
+              }
+              else
+              {
+                delete nSucc;
+              }
+            }
+            else
+            {
+              delete nSucc;
+            }
+          }
+          else
+          {
+            delete nSucc;
+          }
         }
       }
     }
   }
 
-  if (O.empty()) {
+  if (O.empty())
+  {
+    return nullptr;
+  }
+
+  return nullptr;
+}
+
+Node3D *Algorithm::jjhybridAStar(Node3D &start,
+                                 const Node3D &goal,
+                                 Node3D *nodes3D,
+                                 Node2D *nodes2D,
+                                 int width,
+                                 int height,
+                                 CollisionDetection &configurationSpace,
+                                 float *dubinsLookup,
+                                 Visualize &visualization,
+                                 Path &path)
+{
+  int iPred, iSucc;
+  float newG;
+  // Number of possible directions, 3 for forward driving and an additional 3 for reversing
+  int dir = Constants::reverse ? 6 : 3;
+  // Number of iterations the algorithm has run for stopping based on Constants::iterations
+  int iterations = 0;
+  int nodesnum = 0;
+  // VISUALIZATION DELAY
+  ros::Duration d(0.003);
+
+  // OPEN LIST AS BOOST IMPLEMENTATION
+  typedef boost::heap::binomial_heap<Node3D *,
+                                     boost::heap::compare<CompareNodes>>
+      priorityQueue;
+  priorityQueue O;
+
+  // update h value
+
+  updateH(start, goal, nodes2D, dubinsLookup, width, height, configurationSpace, visualization);
+
+  // mark start as open
+  start.open();
+  // push on priority queue aka open list
+  O.push(&start);
+  iPred = start.setIdx(width, height);
+  nodes3D[iPred] = start;
+
+  // NODE POINTER
+  Node3D *nPred;
+  Node3D *nSucc;
+  while (!O.empty())
+  {
+    // get the first nonde
+    nPred = O.top();
+    // pop node from the open list and start with a fresh node
+    O.pop();
+    // set index
+    iPred = nPred->setIdx(width, height);
+    iterations++;
+    //std::cout << "the iteration number is : "<<iterations<<std::endl;
+    if(iterations != 1)
+    {
+      path.publish_search_tree(nPred->getPred(), nPred);
+      d.sleep();
+    }
+    
+
+    // stop if we get goal position
+    if (*nPred == goal)
+    {
+      std::cout << "reach the goal postion with A star search" << std::endl;
+      return nPred;
+    }
+    // stop if we reach the max iteration number
+    if (Constants::iterations / 5 < iterations)
+    {
+      std::cout << "reach the max iteration number" << std::endl;
+      return nullptr;
+    }
+
+    // if we don't need to stop, then use reedsSheep to shot the goal
+    nSucc = ReedsSheppShot(*nPred, goal, configurationSpace);
+    // if the shoot is success, then return
+    if (nSucc != nullptr && *nSucc == goal)
+    {
+      std::cout << "reach the goal postion with reedsSheep shot" << std::endl;
+      return nSucc;
+    }
+
+    // if reedsSheep  shot not success, start A star search expansion
+    for (int i = 0; i < dir; i++)
+    {
+      // create possible successor
+      nSucc = nPred->createSuccessor(i);
+      // set index of the successor
+      iSucc = nSucc->setIdx(width, height);
+      nSucc->setIsRS(false);
+      nSucc->setMovingDirection(i);
+
+      // make sure this is a valid expansion
+      
+      if (nSucc->isOnGrid(width, height) && configurationSpace.isTraversable(nSucc))
+      {
+        //std::cout << "position is valid"<<std::endl;
+        // calculate new G value
+        nSucc->updateG();
+        newG = nSucc->getG();
+        // if isopen or newG<oldG
+        //int isop = nSucc->isOpen()?1:0;
+        //std::cout << "is open ? : " <<isop<<std::endl;
+        if (nodes3D[iSucc].isOpen() || newG < nodes3D[iSucc].getG())
+        {
+          /*
+          nodesnum++;
+          if(nodesnum %10 == 0){
+            std::cout << "nodes in publish tree : " << nodesnum<<std::endl;
+          }
+          */
+          updateH(*nSucc, goal, nodes2D, dubinsLookup, width, height, configurationSpace, visualization);
+          nodes3D[iSucc] = *nSucc;
+          nodes3D[iSucc].close();
+          //nodes3D[iSucc].setG(newG);
+          O.push(&nodes3D[iSucc]);
+          delete nSucc;
+        }
+        else
+        {
+          delete nSucc;
+        }
+      }
+      else // if the expansion is not valid
+      {
+        delete nSucc;
+      }
+    }
+  }
+
+  if (O.empty())
+  {
+    std::cout << " the queue is empty" <<std::endl;
     return nullptr;
   }
 
@@ -244,28 +424,31 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
 //###################################################
 //                                        2D A*
 //###################################################
-float aStar(Node2D& start,
-            Node2D& goal,
-            Node2D* nodes2D,
+float aStar(Node2D &start,
+            Node2D &goal,
+            Node2D *nodes2D,
             int width,
             int height,
-            CollisionDetection& configurationSpace,
-            Visualize& visualization) {
+            CollisionDetection &configurationSpace,
+            Visualize &visualization)
+{
 
   // PREDECESSOR AND SUCCESSOR INDEX
   int iPred, iSucc;
   float newG;
 
   // reset the open and closed list
-  for (int i = 0; i < width * height; ++i) {
+  for (int i = 0; i < width * height; ++i)
+  {
     nodes2D[i].reset();
   }
 
   // VISUALIZATION DELAY
   ros::Duration d(0.001);
 
-  boost::heap::binomial_heap<Node2D*,
-        boost::heap::compare<CompareNodes>> O;
+  boost::heap::binomial_heap<Node2D *,
+                             boost::heap::compare<CompareNodes>>
+      O;
   // update h value
   start.updateH(goal);
   // mark start as open
@@ -276,11 +459,12 @@ float aStar(Node2D& start,
   nodes2D[iPred] = start;
 
   // NODE POINTER
-  Node2D* nPred;
-  Node2D* nSucc;
+  Node2D *nPred;
+  Node2D *nSucc;
 
   // continue until O empty
-  while (!O.empty()) {
+  while (!O.empty())
+  {
     // pop node with lowest cost from priority queue
     nPred = O.top();
     // set index
@@ -289,20 +473,23 @@ float aStar(Node2D& start,
     // _____________________________
     // LAZY DELETION of rewired node
     // if there exists a pointer this node has already been expanded
-    if (nodes2D[iPred].isClosed()) {
+    if (nodes2D[iPred].isClosed())
+    {
       // pop node from the open list and start with a fresh node
       O.pop();
       continue;
     }
     // _________________
     // EXPANSION OF NODE
-    else if (nodes2D[iPred].isOpen()) {
+    else if (nodes2D[iPred].isOpen())
+    {
       // add node to closed list
       nodes2D[iPred].close();
       nodes2D[iPred].discover();
 
       // RViz visualization
-      if (Constants::visualization2D) {
+      if (Constants::visualization2D)
+      {
         visualization.publishNode2DPoses(*nPred);
         visualization.publishNode2DPose(*nPred);
         //        d.sleep();
@@ -313,15 +500,18 @@ float aStar(Node2D& start,
 
       // _________
       // GOAL TEST
-      if (*nPred == goal) {
+      if (*nPred == goal)
+      {
         return nPred->getG();
       }
       // ____________________
       // CONTINUE WITH SEARCH
-      else {
+      else
+      {
         // _______________________________
         // CREATE POSSIBLE SUCCESSOR NODES
-        for (int i = 0; i < Node2D::dir; i++) {
+        for (int i = 0; i < Node2D::dir; i++)
+        {
           // create possible successor
           nSucc = nPred->createSuccessor(i);
           // set index of the successor
@@ -330,13 +520,15 @@ float aStar(Node2D& start,
           // ensure successor is on grid ROW MAJOR
           // ensure successor is not blocked by obstacle
           // ensure successor is not on closed list
-          if (nSucc->isOnGrid(width, height) &&  configurationSpace.isTraversable(nSucc) && !nodes2D[iSucc].isClosed()) {
+          if (nSucc->isOnGrid(width, height) && configurationSpace.isTraversable(nSucc) && !nodes2D[iSucc].isClosed())
+          {
             // calculate new G value
             nSucc->updateG();
             newG = nSucc->getG();
 
             // if successor not on open list or g value lower than before put it on open list
-            if (!nodes2D[iSucc].isOpen() || newG < nodes2D[iSucc].getG()) {
+            if (!nodes2D[iSucc].isOpen() || newG < nodes2D[iSucc].getG())
+            {
               // calculate the H value
               nSucc->updateH(goal);
               // put successor on open list
@@ -344,21 +536,31 @@ float aStar(Node2D& start,
               nodes2D[iSucc] = *nSucc;
               O.push(&nodes2D[iSucc]);
               delete nSucc;
-            } else { delete nSucc; }
-          } else { delete nSucc; }
+            }
+            else
+            {
+              delete nSucc;
+            }
+          }
+          else
+          {
+            delete nSucc;
+          }
         }
       }
     }
   }
 
   // return large number to guide search away
-  return 1000;
+  std::cout << "a star return with 10000"<<std::endl;
+  return 10000;
 }
 
 //###################################################
 //                                         COST TO GO
 //###################################################
-void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLookup, int width, int height, CollisionDetection& configurationSpace, Visualize& visualization) {
+void updateH(Node3D &start, const Node3D &goal, Node2D *nodes2D, float *dubinsLookup, int width, int height, CollisionDetection &configurationSpace, Visualize &visualization)
+{
   float dubinsCost = 0;
   float reedsSheppCost = 0;
   float twoDCost = 0;
@@ -366,7 +568,8 @@ void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLo
 
   // if dubins heuristic is activated calculate the shortest path
   // constrained without obstacles
-  if (Constants::dubins) {
+  if (Constants::dubins)
+  {
 
     // ONLY FOR dubinsLookup
     //    int uX = std::abs((int)goal.getX() - (int)start.getX());
@@ -415,8 +618,8 @@ void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLo
     //      dubinsCost = dubins_path_length(&dubinsPath);
 
     ompl::base::DubinsStateSpace dubinsPath(Constants::r);
-    State* dbStart = (State*)dubinsPath.allocState();
-    State* dbEnd = (State*)dubinsPath.allocState();
+    State *dbStart = (State *)dubinsPath.allocState();
+    State *dbEnd = (State *)dubinsPath.allocState();
     dbStart->setXY(start.getX(), start.getY());
     dbStart->setYaw(start.getT());
     dbEnd->setXY(goal.getX(), goal.getY());
@@ -425,37 +628,40 @@ void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLo
   }
 
   // if reversing is active use a
-  if (Constants::reverse && !Constants::dubins) {
-        //ros::Time t0 = ros::Time::now();
+  if (Constants::reverse && !Constants::dubins)
+  {
+    //ros::Time t0 = ros::Time::now();
     ompl::base::ReedsSheppStateSpace reedsSheppPath(Constants::r);
-    State* rsStart = (State*)reedsSheppPath.allocState();
-    State* rsEnd = (State*)reedsSheppPath.allocState();
+    State *rsStart = (State *)reedsSheppPath.allocState();
+    State *rsEnd = (State *)reedsSheppPath.allocState();
     rsStart->setXY(start.getX(), start.getY());
     rsStart->setYaw(start.getT());
     rsEnd->setXY(goal.getX(), goal.getY());
     rsEnd->setYaw(goal.getT());
     reedsSheppCost = reedsSheppPath.distance(rsStart, rsEnd);
-        //ros::Time t1 = ros::Time::now();
-        //ros::Duration d(t1 - t0);
-        //std::cout << "calculated Reed-Sheep Heuristic in ms: " << d * 1000 << std::endl;
+    //ros::Time t1 = ros::Time::now();
+    //ros::Duration d(t1 - t0);
+    //std::cout << "calculated Reed-Sheep Heuristic in ms: " << d * 1000 << std::endl;
   }
 
   // if twoD heuristic is activated determine shortest path
   // unconstrained with obstacles
-  if (Constants::twoD && !nodes2D[(int)start.getY() * width + (int)start.getX()].isDiscovered()) {
-     //   ros::Time t0 = ros::Time::now();
+  if (Constants::twoD && !nodes2D[(int)start.getY() * width + (int)start.getX()].isDiscovered())
+  {
+    //   ros::Time t0 = ros::Time::now();
     // create a 2d start node
     Node2D start2d(start.getX(), start.getY(), 0, 0, nullptr);
     // create a 2d goal node
     Node2D goal2d(goal.getX(), goal.getY(), 0, 0, nullptr);
     // run 2d astar and return the cost of the cheapest path for that node
     nodes2D[(int)start.getY() * width + (int)start.getX()].setG(aStar(goal2d, start2d, nodes2D, width, height, configurationSpace, visualization));
-     //   ros::Time t1 = ros::Time::now();
+    //   ros::Time t1 = ros::Time::now();
     //   ros::Duration d(t1 - t0);
-     //   std::cout << "calculated 2D Heuristic in ms: " << d * 1000 << std::endl;
+    //   std::cout << "calculated 2D Heuristic in ms: " << d * 1000 << std::endl;
   }
 
-  if (Constants::twoD) {
+  if (Constants::twoD)
+  {
     // offset for same node in cell
     twoDoffset = sqrt(((start.getX() - (long)start.getX()) - (goal.getX() - (long)goal.getX())) * ((start.getX() - (long)start.getX()) - (goal.getX() - (long)goal.getX())) +
                       ((start.getY() - (long)start.getY()) - (goal.getY() - (long)goal.getY())) * ((start.getY() - (long)start.getY()) - (goal.getY() - (long)goal.getY())));
@@ -465,18 +671,19 @@ void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLo
   }
 
   // return the maximum of the heuristics, making the heuristic admissable
-  start.setH(std::max(reedsSheppCost, std::max(dubinsCost, twoDCost)));
-  //start.setH(twoDCost);
+  //start.setH(std::max(reedsSheppCost, std::max(dubinsCost, twoDCost)));
+  start.setH(twoDCost);
 }
 
 //###################################################
 //                                        DUBINS SHOT
 //###################################################
-Node3D* dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& configurationSpace) {
+Node3D *dubinsShot(Node3D &start, const Node3D &goal, CollisionDetection &configurationSpace)
+{
   // start
-  double q0[] = { start.getX(), start.getY(), start.getT() };
+  double q0[] = {start.getX(), start.getY(), start.getT()};
   // goal
-  double q1[] = { goal.getX(), goal.getY(), goal.getT() };
+  double q1[] = {goal.getX(), goal.getY(), goal.getT()};
   // initialize the path
   DubinsPath path;
   // calculate the path
@@ -486,9 +693,10 @@ Node3D* dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& config
   float x = 0.f;
   float length = dubins_path_length(&path);
 
-  Node3D* dubinsNodes = new Node3D [(int)(length / Constants::dubinsStepSize) + 1];
+  Node3D *dubinsNodes = new Node3D[(int)(length / Constants::dubinsStepSize) + 1];
 
-  while (x <  length) {
+  while (x < length)
+  {
     double q[3];
     dubins_path_sample(&path, x, q);
     dubinsNodes[i].setX(q[0]);
@@ -496,25 +704,32 @@ Node3D* dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& config
     dubinsNodes[i].setT(Helper::normalizeHeadingRad(q[2]));
 
     // collision check
-    if (configurationSpace.isTraversable(&dubinsNodes[i])) {
+    if (configurationSpace.isTraversable(&dubinsNodes[i]))
+    {
 
       // set the predecessor to the previous step
-      if (i > 0) {
+      if (i > 0)
+      {
         dubinsNodes[i].setPred(&dubinsNodes[i - 1]);
-      } else {
+      }
+      else
+      {
         dubinsNodes[i].setPred(&start);
       }
 
-      if (&dubinsNodes[i] == dubinsNodes[i].getPred()) {
+      if (&dubinsNodes[i] == dubinsNodes[i].getPred())
+      {
         std::cout << "looping shot";
       }
 
       x += Constants::dubinsStepSize;
       i++;
-    } else {
+    }
+    else
+    {
       //      std::cout << "Dubins shot collided, discarding the path" << "\n";
       // delete all nodes
-      delete [] dubinsNodes;
+      delete[] dubinsNodes;
       return nullptr;
     }
   }
@@ -525,85 +740,91 @@ Node3D* dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& config
 
 /******************************ReedsShepp shot*****************
  */
-Node3D* ReedsSheppShot(Node3D& start, const Node3D& goal, CollisionDetection& configurationSpace) {
-    // start
-    ompl::base::ReedsSheppStateSpace::ReedsSheppPath rsPath;
-    double q0[3] = {start.getX(),start.getY(),start.getT()};
-    double q1[3] = {goal.getX(),goal.getY(),goal.getT()};
-    ompl::base::ReedsSheppStateSpace reedsSheppPath(Constants::r);
-    State* rsStart = (State*)reedsSheppPath.allocState();
-    State* rsEnd = (State*)reedsSheppPath.allocState();
-    rsStart->setXY(q0[0], q0[1]);
-    rsStart->setYaw(q0[2]);
-    rsEnd->setXY(q1[0],q1[1]);
-    rsEnd->setYaw(q1[2]);
-    rsPath = reedsSheppPath.reedsShepp(rsStart,rsEnd);
+Node3D *ReedsSheppShot(Node3D &start, const Node3D &goal, CollisionDetection &configurationSpace)
+{
+  // start
+  ompl::base::ReedsSheppStateSpace::ReedsSheppPath rsPath;
+  double q0[3] = {start.getX(), start.getY(), start.getT()};
+  double q1[3] = {goal.getX(), goal.getY(), goal.getT()};
+  ompl::base::ReedsSheppStateSpace reedsSheppPath(Constants::r);
+  State *rsStart = (State *)reedsSheppPath.allocState();
+  State *rsEnd = (State *)reedsSheppPath.allocState();
+  rsStart->setXY(q0[0], q0[1]);
+  rsStart->setYaw(q0[2]);
+  rsEnd->setXY(q1[0], q1[1]);
+  rsEnd->setYaw(q1[2]);
+  rsPath = reedsSheppPath.reedsShepp(rsStart, rsEnd);
 
-    vector<Node3D> vec;
-    double newStart[3]={q0[0],q0[1],q0[2]};
-    for(int i = 0; i<5; i++){
-        if(rsPath.type_[i] == 0){
-            continue;
-        }
-
-        if(rsPath.type_[i] == 1) // left turn 
-        {
-            get_left_turn(newStart,Constants::r * rsPath.length_[i],vec);
-        }
-        else if(rsPath.type_[i] == 2) //straight
-        {
-            get_straight(newStart,Constants::r * rsPath.length_[i],vec);
-        }
-        else if(rsPath.type_[i] == 3) // right turn
-        {
-            get_right_turn(newStart,Constants::r * rsPath.length_[i],vec);
-        }
+  vector<Node3D> vec;
+  double newStart[3] = {q0[0], q0[1], q0[2]};
+  for (int i = 0; i < 5; i++)
+  {
+    if (rsPath.type_[i] == 0)
+    {
+      continue;
     }
 
-    Node3D tmpNode;
-    
-    tmpNode.setX(newStart[0]);
-    tmpNode.setY(newStart[1]);
-    tmpNode.setT(newStart[2]);
-    tmpNode.setIsRS(true);
-    tmpNode.setRSMotionType(1);//whatever is ok
-    vec.push_back(tmpNode);
-
-    int num_vec =vec.size();
-    Node3D* nPred;
-    Node3D* nSucc;
-    Node3D* newNodes = new Node3D [num_vec];
-    for(int i = 0; i<num_vec; i++){
-        if(i == 0){
-            Node3D tt(vec[i].getX(),vec[i].getY(),vec[i].getT(),0,0,&start);
-            newNodes[i] = tt;
-            nPred = &newNodes[i];
-        }else{
-            Node3D tt(vec[i].getX(),vec[i].getY(),vec[i].getT(),0,0,nPred);
-            newNodes[i] = tt;
-            nPred = &newNodes[i];
-        }
-        //int ttint = configurationSpace.isTraversable(&newNodes[i])? 1:0;
-        //ROS_INFO("reedsshep shot is traversable : %d ",ttint);
-        if(configurationSpace.isTraversable(&newNodes[i]))
-        {
-
-            if (&newNodes[i] == newNodes[i].getPred()) {
-                std::cout << "looping shot";
-            }   
-
-        }
-        else{
-            delete [] newNodes;
-            return nullptr;
-        }
-        
-        
+    if (rsPath.type_[i] == 1) // left turn
+    {
+      get_left_turn(newStart, Constants::r * rsPath.length_[i], vec);
     }
-    std::cout << "all check success, check node number :" <<vec.size()<< std::endl;
-    return &newNodes[vec.size()-1];
+    else if (rsPath.type_[i] == 2) //straight
+    {
+      get_straight(newStart, Constants::r * rsPath.length_[i], vec);
+    }
+    else if (rsPath.type_[i] == 3) // right turn
+    {
+      get_right_turn(newStart, Constants::r * rsPath.length_[i], vec);
+    }
+  }
 
-/*
+  Node3D tmpNode;
+
+  tmpNode.setX(newStart[0]);
+  tmpNode.setY(newStart[1]);
+  tmpNode.setT(newStart[2]);
+  tmpNode.setIsRS(true);
+  tmpNode.setRSMotionType(1); //whatever is ok
+  vec.push_back(tmpNode);
+
+  int num_vec = vec.size();
+  Node3D *nPred;
+  Node3D *nSucc;
+  Node3D *newNodes = new Node3D[num_vec];
+  for (int i = 0; i < num_vec; i++)
+  {
+    if (i == 0)
+    {
+      Node3D tt(vec[i].getX(), vec[i].getY(), vec[i].getT(), 0, 0, &start);
+      newNodes[i] = tt;
+      nPred = &newNodes[i];
+    }
+    else
+    {
+      Node3D tt(vec[i].getX(), vec[i].getY(), vec[i].getT(), 0, 0, nPred);
+      newNodes[i] = tt;
+      nPred = &newNodes[i];
+    }
+    //int ttint = configurationSpace.isTraversable(&newNodes[i])? 1:0;
+    //ROS_INFO("reedsshep shot is traversable : %d ",ttint);
+    if (configurationSpace.isTraversable(&newNodes[i]))
+    {
+
+      if (&newNodes[i] == newNodes[i].getPred())
+      {
+        std::cout << "looping shot";
+      }
+    }
+    else
+    {
+      delete[] newNodes;
+      return nullptr;
+    }
+  }
+  //std::cout << "all check success, check node number :" <<vec.size()<< std::endl;
+  return &newNodes[vec.size() - 1];
+
+  /*
   std::cout<< "I am near while(x<length)" << std::endl;
   std::vector<std::vector<float>> vec;
   reedshepp_sample(path, q0, vec);

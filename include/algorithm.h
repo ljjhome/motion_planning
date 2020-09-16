@@ -52,6 +52,16 @@ class Algorithm {
                              float* dubinsLookup,
                              Visualize& visualization,
                              Path & path);
+   static Node3D* jjhybridAStar(Node3D& start,
+                             const Node3D& goal,
+                             Node3D* nodes3D,
+                             Node2D* nodes2D,
+                             int width,
+                             int height,
+                             CollisionDetection& configurationSpace,
+                             float* dubinsLookup,
+                             Visualize& visualization,
+                             Path & path);
 
 };
 }

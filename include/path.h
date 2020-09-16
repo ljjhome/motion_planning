@@ -92,7 +92,7 @@ class Path {
 
    void publishLineSeg(Node3D * nstart, Node3D * ngoal);
 
-   void publish_search_tree(Node3D* nstart, Node3D* ngoal);
+   void publish_search_tree(const Node3D* nstart, const Node3D* ngoal);
    void cleanPathTree();
  private:
   /// A handle to the ROS node

@@ -16,8 +16,8 @@ const float Node3D::dy[] = { 0,        -0.0415893 * 5,  0.0415893 * 5};
 const float Node3D::dx[] = { 0.7068582 * 5,   0.705224 * 5,   0.705224 * 5};
 const float Node3D::dt[] = { 0,         0.1178097,   -0.1178097};
 */
-const float Node3D::dy[] = { 0,        -0.0415893 ,  0.0415893 };
-const float Node3D::dx[] = { 0.7068582 ,   0.705224 ,   0.705224 };
+const float Node3D::dy[] = { 0,        -0.0415893 / Constants::cellSize ,  0.0415893 / Constants::cellSize };
+const float Node3D::dx[] = { 0.7068582 / Constants::cellSize ,   0.705224 / Constants::cellSize ,   0.705224 / Constants::cellSize };
 const float Node3D::dt[] = { 0,         0.1178097,   -0.1178097};
 //const float Node3D::dt[] = { 0,         0.02356194,   -0.02356194};
 

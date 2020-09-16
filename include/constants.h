@@ -66,9 +66,7 @@ static const double width = 1.8 + 2 * bloating;
 //static const double length = 2.65 + 2 * bloating;
 static const double length = 4.75 + 2 * bloating;
 //static const double length = (4 + 2 * bloating)/0.2;
-/// [m] --- The minimum turning radius of the vehicle
-static const float r = 6;
-//static const float r = 6/0.2;
+
 /// [m] --- The number of discretizations in heading
 static const int headings = 72;
 /// [°] --- The discretization value of the heading (goal condition)
@@ -78,7 +76,11 @@ static const float deltaHeadingRad = 2 * M_PI / (float)headings;
 /// [c*M_PI] --- The heading part of the goal condition
 static const float deltaHeadingNegRad = 2 * M_PI - deltaHeadingRad;
 /// [m] --- The cell size of the 2D grid of the world
-static const float cellSize = 1.0;
+//static const float cellSize = 1.0;
+static const float cellSize = 0.2;
+/// [m] --- The minimum turning radius of the vehicle
+static const float r = 6 / cellSize ;
+//static const float r = 6/0.2;
 /*!
   \brief [m] --- The tie breaker breaks ties between nodes expanded in the same cell
 
@@ -103,7 +105,7 @@ static const float penaltyCOD = 2.0;
 /// [m] --- The distance to the goal when the analytical solution (Dubin's shot) first triggers
 static const float dubinsShotDistance = 100;
 /// [m] --- The step size for the analytical solution (Dubin's shot) primarily relevant for collision checking
-static const float dubinsStepSize = 1;
+static const float dubinsStepSize = 1 / cellSize;
 
 
 // ______________________
